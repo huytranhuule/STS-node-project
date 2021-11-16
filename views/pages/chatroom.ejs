@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Socket.IO chat</title>
+    <style>
+        body {
+            margin: 0;
+            padding-bottom: 3rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #form {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.25rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            height: 3rem;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+        }
+
+        #input {
+            border: none;
+            padding: 0 1rem;
+            flex-grow: 1;
+            border-radius: 2rem;
+            margin: 0.25rem;
+        }
+
+        #input:focus {
+            outline: none;
+        }
+
+        #form>button {
+            background: #333;
+            border: none;
+            padding: 0 1rem;
+            margin: 0.25rem;
+            border-radius: 3px;
+            outline: none;
+            color: #fff;
+        }
+
+        #messages {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #messages>li {
+            padding: 0.5rem 1rem;
+        }
+
+        #messages>li:nth-child(odd) {
+            background: #efefef;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Chatroom</h1>
+    <ul id="messages">
+        <% for(message of messages){ %>
+            <li> <%= message.user %>: <%= message.message %> </li>
+            <% } %>
+    </ul>
+    <form id="form" action="">
+        <label for="msg">Message</label>
+        <input id="msg" autocomplete="off" />
+        <button type="submit" id="send-button">Send</button>
+    </form>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const getCookieValue = (name) => (
+        document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+    )
+    const token = getCookieValue("token");
+    const socket = io("http://localhost:8080", {
+        query: { token: token },
+    });
+
+    const messages = document.getElementById('messages');
+    const form = document.getElementById('form');
+    const msg = document.getElementById('msg');
+    const joinRoomButton = document.getElementById('room-button');
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const room = urlParams.get('room')
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (msg.value) {
+            socket.emit('chat message', msg.value, room);
+            msg.value = '';
+        }
+    });
+
+    socket.emit('join-room', room, joinMsg => {
+        var item = document.createElement('li');
+        item.textContent = joinMsg;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    socket.on('connect', function (msg) {
+
+        var item = document.createElement('li');
+        item.textContent = `You connect with id: ${socket.id}`;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    socket.on('chat message', function ({ message, username }) {
+        var item = document.createElement('li');
+        item.textContent = username + ":  " + message;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+</script>
+
+</html>

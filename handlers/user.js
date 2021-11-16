@@ -67,7 +67,7 @@ exports.login = async (req, res) => {
 
     return res
       .cookie('token', token, {
-        httpOnly: true,
+        httpOnly: false,
       })
       .redirect(`/api/user/profile/${username}`);
   }
